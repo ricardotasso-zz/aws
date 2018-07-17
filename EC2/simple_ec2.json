@@ -1,0 +1,151 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "CloudFormation to create single EC2 instance in specific zone with EBS",
+    "Mappings" : {
+        "RegionMap" : {
+          "us-east-1": {
+            "Name": "Virginia",
+            "NumAZs": "2",
+            "AZ0": "us-east-1a",
+            "AZ1": "us-east-1c"
+        }
+        }
+    },
+    "Parameters": {
+        "KeyName": {
+          "Description": "Name of an existing EC2 KeyPair to access the instance",
+          "Type": "AWS::EC2::KeyPair::KeyName",
+          "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "InstanceType": {
+          "Description": "EC2 instance type",
+          "Type": "String",
+          "Default": "t2.micro"
+        },
+        "AMI": {
+            "Description": "EC2 Image ID",
+            "Type": "String"
+          },
+        "InstanceSecurityGroup": {
+            "Description": "Name of an existing SecurityGroup",
+            "Type": "AWS::EC2::SecurityGroup::Id",
+            "ConstraintDescription": "must be the name of an existing EC2 SecurityGroup."
+          },
+        "VolumeSize" : {
+            "Description" : "The size of the EBS volume to attach",
+            "Type" : "Number",
+            "Default" : "40"
+        },
+        "Zone" : {
+            "Description" : "Specify the instance zone",
+            "Type" : "String",
+            "AllowedValues" : ["AZ0", "AZ1"],
+            "Default" : "AZ0"
+        },
+        "Environment" : {
+            "Description" : "Specify the instance environment",
+            "Type" : "String",
+            "AllowedValues" : ["Dev", "Homol", "Production"],
+            "Default" : "Dev"
+        },
+        "EC2Subnet": {
+            "Description": "Name of an existing subnet",
+            "Type": "AWS::EC2::Subnet::Id"
+        }
+    },
+    "Resources": {
+       "EC2" : {
+          "Type" : "AWS::EC2::Instance",
+          "Properties" : {
+            "InstanceType": {
+                "Ref": "InstanceType"
+              },
+              "SecurityGroupIds": [
+                {
+                  "Ref": "InstanceSecurityGroup"
+                }
+              ],
+              "KeyName": {
+                "Ref": "KeyName"
+              },
+              "ImageId": {
+                  "Ref": "AMI"
+              },
+              "SubnetId": {
+                  "Ref": "EC2Subnet"
+              },
+              "BlockDeviceMappings" : [
+                {
+                  "DeviceName" : "/dev/sda1",
+                     "Ebs" : {
+                        "VolumeSize" : {
+                          "Ref": "VolumeSize"
+                        }
+                      }
+                }
+             ],
+              "AvailabilityZone" : {
+                "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, {"Ref" : "Zone"} ]
+              },
+              "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "Instance_Name"
+                },
+                {
+                    "Key": "Environment",
+                    "Value": {
+                        "Ref": "Environment"
+                      }
+                }
+            ],
+            "UserData": {
+                "Fn::Base64": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "#!/bin/bash -ex",
+                            "-"
+                        ]
+                    ]
+                }
+            }
+          }
+       }
+    },
+    "Outputs": {
+        "InstanceId": {
+          "Description": "InstanceId of the newly created EC2 instance",
+          "Value": {
+            "Ref": "EC2"
+          }
+        },
+        "AZ": {
+          "Description": "Availability Zone of the newly created EC2 instance",
+          "Value": {
+            "Fn::GetAtt": [
+              "EC2",
+              "AvailabilityZone"
+            ]
+          }
+        },
+        "PrivateDNS": {
+            "Description": "Private DNS Name of the created EC2 instance",
+            "Value": {
+              "Fn::GetAtt": [
+                "EC2",
+                "PrivateDnsName"
+              ]
+            }
+          },
+          "PrivateIP": {
+            "Description": "Private IP address of the created EC2 instance",
+            "Value": {
+              "Fn::GetAtt": [
+                "EC2",
+                "PrivateIp"
+              ]
+            }
+          }
+    }
+}
