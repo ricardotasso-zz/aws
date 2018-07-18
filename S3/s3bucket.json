@@ -1,0 +1,65 @@
+{
+"AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "CloudFormation to create simple S3 Bucket with Access Control and Cost Centre tag",
+    "Metadata": {
+
+    },
+    "Parameters": {
+        "BucketName":{
+            "Description": "Type the name of bucket always lowercase",
+            "Type": "String",
+            "Default": "Name"            
+        },
+        "Environment" : {
+            "Description" : "Specify the instance environment",
+            "Type" : "String",
+            "AllowedValues" : ["Shared", "Dev", "Homol", "Production"],
+            "Default" : "Shared"
+        },
+        "Ccentre": {
+            "Description": "Type the Cost Centre",
+            "Type": "String",
+            "Default": "Name"            
+        },
+        "AccessControl":{
+            "Description": "Determine the access rights",
+            "Type": "String",
+            "Default": "Private",
+            "AllowedValues": ["Private", "PublicRead", "PublicReadWrite", "AuthenticatedRead", "LogDeliveryWrite", "BucketOwnerRead", "BucketOwnerFullControl"]
+        }
+    
+    },
+    "Resources": {
+        "s3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": {"Ref":"AccessControl"},
+                "BucketName": {"Ref": "BucketName"},
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {"Ref":"BucketName"}
+                    },
+                    {
+                        "Key": "Environment",
+                        "Value": {
+                            "Ref": "Environment"
+                          }
+                    },
+                    {
+                        "Key": "Cost Centre",
+                        "Value": {
+                            "Ref": "Ccentre"
+                          }
+                    }
+                ] 
+            }
+        }
+    },
+    "Outputs": {
+        "S3BucketName":{
+            "Value": {"Ref": "BucketName"},
+            "Description": "Name of S3 Bucket"
+        }
+    }
+}
